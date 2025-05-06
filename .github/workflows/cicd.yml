@@ -24,13 +24,13 @@ jobs:
       - name: Azure Login
         run: |
           az login --service-principal \
-            -u "7e6961b7-d775-4202-af1e-946643cd6617" \
-            -p "u3_8Q~wqay~QCjjWIUdCCU_6m9evI1QU5DBLjaDp" \
-            --tenant "b6dd09c7-5845-473b-a85b-9598c1e212c8"
+            -u ${{ secrets.CLIENTID }} \
+            -p ${{ secrets.CLIENTSECRET }} \
+            --tenant ${{ secrets.TENATID }}
         env:
-          AZURE_CLIENT_ID: "7e6961b7-d775-4202-af1e-946643cd6617" # e.g., "12345678-1234-1234-1234-1234567890ab"
-          AZURE_CLIENT_SECRET: "u3_8Q~wqay~QCjjWIUdCCU_6m9evI1QU5DBLjaDp"  # e.g., "abc~def1234567890"
-          AZURE_TENANT_ID: "b6dd09c7-5845-473b-a85b-9598c1e212c8"  # e.g., "98765432-4321-4321-4321-0987654321ba"
+          AZURE_CLIENT_ID: ${{ secrets.CLIENTID }} # e.g., "12345678-1234-1234-1234-1234567890ab"
+          AZURE_CLIENT_SECRET: ${{ secrets.CLIENTSECRET }}  # e.g., "abc~def1234567890"
+          AZURE_TENANT_ID: ${{ secrets.TENATID }}  # e.g., "98765432-4321-4321-4321-0987654321ba"
 
       # Install Databricks CLI
       - name: Install Databricks CLI
