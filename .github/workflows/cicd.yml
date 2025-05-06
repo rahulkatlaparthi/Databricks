@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Azure Databricks
+name: CI/CD Pipeline for Azure Databricks with DABs
 
 on:
   workflow_dispatch:  # Manual triggering
@@ -13,24 +13,18 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # Hardcoded Python version
-      
-      - name: Run Pytest
-        run: |
-                pip install -r requirements.txt
-                echo "Listing directory structure:"
-                ls -R src
-                export PYTHONPATH=$PWD
-                pytest src/tests --verbose
-        working-directory: .
+          python-version: '3.9'
 
-    
+      # Install Azure CLI
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       # Log in to Azure using Service Principal
       - name: Azure Login
@@ -39,32 +33,105 @@ jobs:
             -u ${{ secrets.CLIENTID }} \
             -p ${{ secrets.CLIENTSECRET }} \
             --tenant ${{ secrets.TENATID }}
+          az account list --output table
         env:
-          AZURE_CLIENT_ID: ${{ secrets.CLIENTID }} # e.g., "12345678-1234-1234-1234-1234567890ab"
-          AZURE_CLIENT_SECRET: ${{ secrets.CLIENTSECRET }}  # e.g., "abc~def1234567890"
-          AZURE_TENANT_ID: ${{ secrets.TENATID }}  # e.g., "98765432-4321-4321-4321-0987654321ba"
+          AZURE_CLIENT_ID: ${{ secrets.CLIENTID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.CLIENTSECRET }}
+          AZURE_TENANT_ID: ${{ secrets.TENATID }}
+
+      # Install dependencies and run pytest
+      - name: Run Pytest
+        run: |
+          pip install -r requirements.txt
+          echo "Listing directory structure:"
+          ls -R src
+          echo "Current PYTHONPATH: $PYTHONPATH"
+          export PYTHONPATH=$PWD
+          echo "Updated PYTHONPATH: $PYTHONPATH"
+          pytest src/tests --verbose
+        working-directory: .
 
       # Install Databricks CLI
       - name: Install Databricks CLI
-        run: pip install databricks-cli
+        uses: databricks/setup-cli@v0.9.0
 
-      # Configure Databricks CLI with token
-      - name: Configure Databricks CLI
+      # Validate Databricks Asset Bundle
+      - name: Validate DAB
         run: |
-          echo -e "[DEFAULT]\nhost = https://adb-1982449634857191.11.azuredatabricks.net\ntoken = dapi1d0380c74f4fda0d6d6ab84426294dc3-3" > ~/.databrickscfg
-        # e.g., host = https://adb-1234567890123456.7.azuredatabricks.net
-        # e.g., token = dapi1234567890abcdef1234567890abcdef
+          databricks bundle validate
+        working-directory: .
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
-      # Extract branch name
-      - name: Extract branch name
-        id: extract_branch
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+      # Deploy Databricks Asset Bundle (dev target)
+      - name: Deploy DAB to Dev
+        run: |
+          databricks bundle deploy --target dev
+        working-directory: .
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      # Run Databricks Job
+      - name: Run DAB Job
+        run: |
+          databricks bundle run sample_job --refresh-all
+        working-directory: .
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      # Verify or create Databricks repository
+      - name: Verify or Create Databricks Repository
+        id: get_repo_id
+        run: |
+          REPO_ID="4180936112745165"
+          REPO_PATH="/Repos/infostar52701@gmail.com/sample-databricks-project"
+          REPO_URL="https://github.com/<your-username>/sample-databricks-project"
+          EXISTS=$(databricks repos list | grep -B 1 "$REPO_PATH" | grep '"id": '"$REPO_ID" || echo "")
+          if [ -z "$EXISTS" ]; then
+            echo "Repository ID $REPO_ID not found. Creating new repository..."
+            REPO_ID=$(databricks repos create --url "$REPO_URL" --provider gitHub --path "$REPO_PATH" | grep -o '"repo_id": [0-9]\+' | grep -o '[0-9]\+')
+            if [ -z "$REPO_ID" ]; then
+              echo "Error: Failed to create repository"
+              exit 1
+            fi
+            echo "Created repository with ID: $REPO_ID"
+          else
+            echo "Found repository with ID: $REPO_ID"
+          fi
+          echo "::set-output name=repo_id::$REPO_ID"
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
       # Update Databricks Git folder
       - name: Update Databricks Git folder
         run: |
-         databricks repos update --repo-id "4180936112745165" --branch "${{ steps.extract_branch.outputs.branch }}"
-        # e.g., /Repos/user@example.com/sample-databricks-project
+          databricks repos list
+          databricks repos update --repo-id "$REPO_ID" --branch "$BRANCH"
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          REPO_ID: 4180936112745165
+          BRANCH: ${{ steps.extract_branch.outputs.branch }}
 
       # Deploy notebooks to workspace
-      
+      - name: Deploy notebooks to workspace
+        run: |
+          databricks workspace import_dir notebooks /Shared/sample_project --overwrite
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      # Build and deploy Python wheel
+      - name: Build and deploy wheel
+        run: |
+          pip install wheel
+          python setup.py bdist_wheel
+          databricks fs cp --overwrite dist/*.whl dbfs:/FileStore/libraries/sample_project-latest.whl
+        working-directory: src
+        env:
+          DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
