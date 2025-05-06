@@ -1,0 +1,77 @@
+name: CI/CD Pipeline for Azure Databricks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'  # Hardcoded Python version
+
+      # Install Azure CLI
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      # Log in to Azure using Service Principal
+      - name: Azure Login
+        run: |
+          az login --service-principal \
+            -u <your-client-id> \
+            -p <your-client-secret> \
+            --tenant <your-tenant-id>
+        env:
+          AZURE_CLIENT_ID: "7e6961b7-d775-4202-af1e-946643cd6617" # e.g., "12345678-1234-1234-1234-1234567890ab"
+          AZURE_CLIENT_SECRET: "u3_8Q~wqay~QCjjWIUdCCU_6m9evI1QU5DBLjaDp"  # e.g., "abc~def1234567890"
+          AZURE_TENANT_ID: "b6dd09c7-5845-473b-a85b-9598c1e212c8"  # e.g., "98765432-4321-4321-4321-0987654321ba"
+
+      # Install Databricks CLI
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+
+      # Configure Databricks CLI with token
+      - name: Configure Databricks CLI
+        run: |
+          echo -e "[DEFAULT]\nhost = https://adb-1982449634857191.11.azuredatabricks.net\ntoken = dapi1d0380c74f4fda0d6d6ab84426294dc3-3" > ~/.databrickscfg
+        # e.g., host = https://adb-1234567890123456.7.azuredatabricks.net
+        # e.g., token = dapi1234567890abcdef1234567890abcdef
+
+      # Extract branch name
+      - name: Extract branch name
+        id: extract_branch
+        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+
+      # Update Databricks Git folder
+      - name: Update Databricks Git folder
+        run: |
+          databricks repos update /Repos/infostar52701@gmail.com/sample-databricks-project --branch "${{ steps.extract_branch.outputs.branch }}"
+        # e.g., /Repos/user@example.com/sample-databricks-project
+
+      # Deploy notebooks to workspace
+      - name: Deploy notebooks to workspace
+        run: |
+          databricks workspace import_dir notebooks /Shared/sample_project --overwrite
+
+      # Optional: Build and deploy Python wheel
+      - name: Build and deploy wheel
+        run: |
+          pip install wheel
+          python setup.py bdist_wheel
+          databricks fs cp --overwrite dist/*.whl dbfs:/FileStore/libraries/sample_project-latest.whl
+        working-directory: src
