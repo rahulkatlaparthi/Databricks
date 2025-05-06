@@ -1,0 +1,8 @@
+bundle:
+  name: sample-databricks-project
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://adb-1982449634857191.11.azuredatabricks.net
