@@ -55,14 +55,4 @@ jobs:
         # e.g., /Repos/user@example.com/sample-databricks-project
 
       # Deploy notebooks to workspace
-      - name: Deploy notebooks to workspace
-        run: |
-          databricks workspace import_dir notebooks /Shared/sample_project --overwrite
-
-      # Optional: Build and deploy Python wheel
-      - name: Build and deploy wheel
-        run: |
-          pip install wheel
-          python setup.py bdist_wheel
-          databricks fs cp --overwrite dist/*.whl dbfs:/FileStore/libraries/sample_project-latest.whl
-        working-directory: src
+      
