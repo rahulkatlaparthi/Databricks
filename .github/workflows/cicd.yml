@@ -1,7 +1,10 @@
 name: CI/CD Pipeline for Azure Databricks
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual triggering
+  pull_request:
+    branches:
+      - main  # Trigger on PRs targeting main
 
 jobs:
   deploy:
