@@ -1,12 +1,6 @@
 name: CI/CD Pipeline for Azure Databricks
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -30,9 +24,9 @@ jobs:
       - name: Azure Login
         run: |
           az login --service-principal \
-            -u <your-client-id> \
-            -p <your-client-secret> \
-            --tenant <your-tenant-id>
+            -u "7e6961b7-d775-4202-af1e-946643cd6617" \
+            -p "u3_8Q~wqay~QCjjWIUdCCU_6m9evI1QU5DBLjaDp" \
+            --tenant "b6dd09c7-5845-473b-a85b-9598c1e212c8"
         env:
           AZURE_CLIENT_ID: "7e6961b7-d775-4202-af1e-946643cd6617" # e.g., "12345678-1234-1234-1234-1234567890ab"
           AZURE_CLIENT_SECRET: "u3_8Q~wqay~QCjjWIUdCCU_6m9evI1QU5DBLjaDp"  # e.g., "abc~def1234567890"
