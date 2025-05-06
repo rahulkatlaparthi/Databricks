@@ -91,7 +91,7 @@ jobs:
       - name: Deploy DAB to Dev
         run: |
           databricks bundle deploy --target dev
-        working-directory: .
+        working-directory: ./databricks/bundle
         env:
           DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
@@ -100,7 +100,7 @@ jobs:
       - name: Run DAB Job
         run: |
           databricks bundle run sample_job --refresh-all
-        working-directory: .
+        working-directory: ./databricks/bundle
         env:
           DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
