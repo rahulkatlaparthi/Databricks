@@ -24,10 +24,7 @@ jobs:
         with:
           python-version: '3.9'  # Hardcoded Python version
 
-      # Install Azure CLI
-      - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    
 
       # Log in to Azure using Service Principal
       - name: Azure Login
