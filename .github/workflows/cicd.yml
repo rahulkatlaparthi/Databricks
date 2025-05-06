@@ -54,6 +54,17 @@ jobs:
       # Install Databricks CLI
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
+      - name: Check for databricks.yml
+        run: |
+          echo "Listing .databricks/bundle directory:"
+          ls -R .databricks/bundle
+          if [ -f .databricks/bundle/databricks.yml ]; then
+            echo "Found databricks.yml"
+          else
+            echo "Error: databricks.yml not found"
+            exit 1
+          fi
+        working-directory: .
 
       # Validate Databricks Asset Bundle
       - name: Validate DAB
