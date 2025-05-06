@@ -51,6 +51,7 @@ jobs:
           pytest src/tests --verbose
         working-directory: .
 
+        
       # Install Databricks CLI
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
@@ -67,8 +68,19 @@ jobs:
         working-directory: .
 
       # Validate Databricks Asset Bundle
+      # - name: Validate DAB
+      #   run: |
+      #     databricks bundle validate
+      #   working-directory: .
+      #   env:
+      #     DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       - name: Validate DAB
         run: |
+          echo "Current directory: $PWD"
+          echo "Listing repository root:"
+          ls -R .
+          echo "Running databricks bundle validate"
           databricks bundle validate
         working-directory: .
         env:
