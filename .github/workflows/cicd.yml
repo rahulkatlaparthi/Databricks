@@ -82,7 +82,7 @@ jobs:
           ls -R .
           echo "Running databricks bundle validate"
           databricks bundle validate
-        working-directory: .
+        working-directory: ./databricks/bundle
         env:
           DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
