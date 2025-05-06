@@ -52,7 +52,7 @@ jobs:
       - name: Update Databricks Git folder
         run: |
          databricks repos list
-         databricks repos update  repo-id 4180936112745165 --branch "${{ steps.extract_branch.outputs.branch }}"
+         databricks repos update  --repo-id 4180936112745165 --branch "${{ steps.extract_branch.outputs.branch }}"
         # e.g., /Repos/user@example.com/sample-databricks-project
 
       # Deploy notebooks to workspace
