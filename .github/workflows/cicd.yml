@@ -99,8 +99,8 @@ jobs:
       # Run Databricks Job
       - name: Run DAB Job
         run: |
-          databricks bundle run sample_job --refresh-all
-        working-directory: ./databricks/bundle
+          databricks bundle run sample_job 
+        working-directory: .
         env:
           DATABRICKS_HOST: https://adb-1982449634857191.11.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
